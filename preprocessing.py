@@ -36,5 +36,7 @@ print("\n[Features dataset — missing values per column]")
 
 if missing_feat.sum() == 0:
     print("  No missing values found.")
+
 else:
-    print(missing_feat[missing_feat > 0])
+    cols_with_nulls = missing_feat[missing_feat > 0]
+    print(cols_with_nulls)
