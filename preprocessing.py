@@ -125,3 +125,49 @@ text_len_cols = ["statement_length", "tweet_length", "keyword_count"]
 scaler2 = MinMaxScaler()
 df_main[text_len_cols] = scaler2.fit_transform(df_main[text_len_cols])
 print(f"\n  Also normalized: {', '.join(text_len_cols)}")
+
+# Data Transformation
+
+# Encode label columns
+le = LabelEncoder()
+df_main["label_3_encoded"] = le.fit_transform(df_main["3_label_majority_answer"])
+classes_3 = list(le.classes_)
+print(f"  [3-class label encoding] {dict(zip(classes_3, le.transform(classes_3)))}")
+df_main["label_5_encoded"] = le.fit_transform(df_main["5_label_majority_answer"])
+classes_5 = list(le.classes_)
+print(f"  [5-class label encoding] {dict(zip(classes_5, le.transform(classes_5)))}")
+
+
+# Log transform on skewed engagement columns
+# Re-load raw for demonstration
+df_feat_raw = pd.read_csv(FEAT_CSV, index_col=0)
+skewed_cols = ["retweets", "replies", "quotes", "favourites"]
+skewed_cols = [c for c in skewed_cols if c in df_feat_raw.columns]
+
+print(f"\n  [Log1p transformation on skewed columns]")
+
+for col in skewed_cols:
+    original_skew = df_feat_raw[col].skew()
+    df_feat[col + "_log"] = np.log1p(df_feat_raw[col].clip(lower=0))
+    new_skew = df_feat[col + "_log"].skew()
+    print(f"    {col:<15} skew before: {original_skew:>8.2f}  ->  after log1p: {new_skew:.2f}")
+
+
+
+# Drop unnecessary columns
+drop_cols = ["embeddings"]
+drop_cols = [c for c in drop_cols if c in df_feat.columns]
+
+if drop_cols:
+    df_feat.drop(columns=drop_cols, inplace=True)
+    print(f"\n  Dropped high-cardinality/raw columns: {drop_cols}")
+
+
+
+# Save files
+main_out = os.path.join(OUTPUT_DIR, "main_preprocessed.csv")
+feat_out = os.path.join(OUTPUT_DIR, "features_preprocessed.csv")
+df_main.to_csv(main_out)
+df_feat.to_csv(feat_out)
+print("\n  Saved: main_preprocessed.csv")
+print("  Saved: features_preprocessed.csv")
