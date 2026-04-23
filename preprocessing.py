@@ -40,3 +40,23 @@ if missing_feat.sum() == 0:
 else:
     cols_with_nulls = missing_feat[missing_feat > 0]
     print(cols_with_nulls)
+
+# No missing values found in datasets. But due to best practice we will keep that part of code.
+
+# Filling numeric columns
+numeric_cols = df_feat.select_dtypes(include="number").columns
+for col in numeric_cols:
+    if df_feat[col].isnull().sum() > 0:
+        median_val = df_feat[col].median()
+        df_feat[col].fillna(median_val, inplace=True)
+        print(f"  Filled '{col}' with median: {median_val:.4f}")
+
+
+
+# Filling categorical columns
+cat_cols = df_feat.select_dtypes(include="object").columns
+for col in cat_cols:
+    if df_feat[col].isnull().sum() > 0:
+        mode_val = df_feat[col].mode()[0]
+        df_feat[col].fillna(mode_val, inplace=True)
+        print(f"  Filled '{col}' with mode: {mode_val}")
