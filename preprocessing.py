@@ -60,3 +60,43 @@ for col in cat_cols:
         mode_val = df_feat[col].mode()[0]
         df_feat[col].fillna(mode_val, inplace=True)
         print(f"  Filled '{col}' with mode: {mode_val}")
+
+print(f"\n  After cleaning — missing in main dataset: {df_main.isnull().sum().sum()}")
+print(f"\n  After cleaning — missing in features dataset: {df_feat.isnull().sum().sum()}")
+
+
+# Feature Engineering
+# statement_lenght column
+df_main["statement_length"] = df_main["statement"].apply(len)
+print("  [+] statement_length — character count of each claim")
+
+# tweet_length column
+df_main["tweet_length"] = df_main["tweet"].apply(len)
+print("  [+] tweet_length — character count of each tweet")
+
+# keyword_count column
+df_main["keyword_count"] = df_main["manual_keywords"].apply(
+    lambda x: len(str(x).split(",")) if pd.notna(x) else 0
+)
+print("  [+] keyword_count — number of manual keywords per statement")
+
+# engagement_score column
+engagement_cols = ["retweets", "replies", "quotes", "mentions", "favourites"]
+available = [c for c in engagement_cols if c in df_feat.columns]
+df_feat["engagement_score"] = df_feat[available].sum(axis=1)
+print(f"  [+] engagement_score — sum of: {', '.join(available)}")
+
+# is_bot column
+if "BotScore" in df_feat.columns:
+    df_feat["is_bot"] = (df_feat["BotScore"] > 0.5).astype(int)
+    bot_count = df_feat["is_bot"].sum()
+    print(f"  [+] is_bot — flagged {bot_count:,} accounts as likely bots (BotScore > 0.5)")
+
+# NER diversity — how many entity types appear in a tweet (percentage > 0)
+ner_cols = [c for c in df_feat.columns if c.endswith("_percentage")]
+df_feat["ner_diversity"] = (df_feat[ner_cols] > 0).sum(axis=1)
+print(f"  [+] ner_diversity — number of distinct NER categories present per tweet")
+
+
+print(f"\n  New features added to main dataset  : statement_length, tweet_length, keyword_count")
+print(f"  New features added to features dataset: engagement_score, is_bot, ner_diversity")
