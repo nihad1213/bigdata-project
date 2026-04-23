@@ -100,3 +100,28 @@ print(f"  [+] ner_diversity — number of distinct NER categories present per t
 
 print(f"\n  New features added to main dataset  : statement_length, tweet_length, keyword_count")
 print(f"  New features added to features dataset: engagement_score, is_bot, ner_diversity")
+
+
+# Data Normalization
+
+# Columns to normalize — social media stats and engagement
+cols_to_normalize = [
+    "followers_count", "friends_count", "favourites_count",
+    "statuses_count", "listed_count", "engagement_score",
+    "BotScore", "cred", "normalize_influence"
+
+]
+
+cols_to_normalize = [c for c in cols_to_normalize if c in df_feat.columns]
+scaler = MinMaxScaler()
+df_feat[cols_to_normalize] = scaler.fit_transform(df_feat[cols_to_normalize])
+print(f"  Applied Min-Max scaling to {len(cols_to_normalize)} columns:")
+
+for col in cols_to_normalize:
+    print(f"    - {col}  ->  min={df_feat[col].min():.4f}, max={df_feat[col].max():.4f}")
+
+# Also normalize engineered text-length features
+text_len_cols = ["statement_length", "tweet_length", "keyword_count"]
+scaler2 = MinMaxScaler()
+df_main[text_len_cols] = scaler2.fit_transform(df_main[text_len_cols])
+print(f"\n  Also normalized: {', '.join(text_len_cols)}")
