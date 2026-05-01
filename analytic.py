@@ -2,9 +2,9 @@ import os
 import warnings
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
@@ -27,7 +27,7 @@ print("Loading dataset...")
 df = pd.read_csv(FEAT_CSV, index_col=0)
 print(f"  Shape: {df.shape[0]:,} rows x {df.shape[1]} columns")
 
-
+# drop text columns, we only use numeric features for these models
 drop_cols = ["majority_target", "statement", "tweet", "embeddings"]
 drop_cols  = [c for c in drop_cols if c in df.columns]
 df = df.drop(columns=drop_cols)
@@ -44,6 +44,7 @@ X = X.fillna(X.median())
 print(f"  Features used : {X.shape[1]}")
 print(f"  Class distribution -> 0: {(y==0).sum():,}  |  1: {(y==1).sum():,}")
 
+# 80% train, 20% test, stratified to keep class ratio
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
 )
@@ -77,18 +78,18 @@ for name, model in models.items():
     print(f"  Recall    : {rec:.4f}")
     print(f"  F1 Score  : {f1:.4f}")
 
-print("RESULTS COMPARISON")
+print("\nRESULTS COMPARISON")
 df_results = pd.DataFrame(results).T
 print(df_results.to_string(float_format=lambda x: f"{x:.4f}"))
 
 best_model_name = df_results["F1"].idxmax()
-print(f"\n  Best model (F1): {best_model_name}  ->  {df_results.loc[best_model_name, 'F1']:.4f}")
+print(f"\n  Best model (F1): {best_model_name} -> {df_results.loc[best_model_name, 'F1']:.4f}")
 
-best_model = models[best_model_name]
+best_model  = models[best_model_name]
 y_pred_best = best_model.predict(X_test)
 cm = confusion_matrix(y_test, y_pred_best)
 
-
+# feature importance from tree-based models
 rf_model  = models["Random Forest"]
 xgb_model = models["XGBoost"]
 
@@ -98,11 +99,10 @@ xgb_importance = pd.Series(xgb_model.feature_importances_, index=X.columns)
 top_rf  = rf_importance.nlargest(10)
 top_xgb = xgb_importance.nlargest(10)
 
-
 fig, axes = plt.subplots(2, 2, figsize=(16, 12))
-fig.suptitle("ML Model Analysis — Truth Seeker Dataset", fontsize=14, fontweight="bold")
+fig.suptitle("ML Model Analysis - Truth Seeker Dataset", fontsize=14, fontweight="bold")
 
-# Plot 1: model comparison bar chart
+# model scores side by side
 ax1 = axes[0, 0]
 metrics = ["Accuracy", "Precision", "Recall", "F1"]
 x = np.arange(len(metrics))
@@ -117,30 +117,30 @@ ax1.set_title("Model Comparison")
 ax1.set_ylabel("Score")
 ax1.legend(fontsize=8)
 
-# Plot 2: confusion matrix
+# where the model got it right and wrong
 ax2 = axes[0, 1]
 disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["False (0)", "True (1)"])
 disp.plot(ax=ax2, colorbar=False, cmap="Blues")
-ax2.set_title(f"Confusion Matrix — {best_model_name}")
+ax2.set_title(f"Confusion Matrix - {best_model_name}")
 
-# Plot 3: Random Forest feature importance
+# which features mattered most
 ax3 = axes[1, 0]
 top_rf.sort_values().plot(kind="barh", ax=ax3, color="#9b59b6")
-ax3.set_title("Top 10 Features — Random Forest")
+ax3.set_title("Top 10 Features - Random Forest")
 ax3.set_xlabel("Importance")
 
-# Plot 4: XGBoost feature importance
 ax4 = axes[1, 1]
 top_xgb.sort_values().plot(kind="barh", ax=ax4, color="#e67e22")
-ax4.set_title("Top 10 Features — XGBoost")
+ax4.set_title("Top 10 Features - XGBoost")
 ax4.set_xlabel("Importance")
 
 plt.tight_layout()
 plot_path = os.path.join(OUT_DIR, "model_results.png")
 plt.savefig(plot_path, dpi=150)
+plt.close()
 print("\nPlot saved: output/model_results.png")
 
-print(f"CLASSIFICATION REPORT — {best_model_name}")
+print(f"\nCLASSIFICATION REPORT - {best_model_name}")
 print(classification_report(y_test, y_pred_best, target_names=["False", "True"]))
 
 print("Analysis complete.")
